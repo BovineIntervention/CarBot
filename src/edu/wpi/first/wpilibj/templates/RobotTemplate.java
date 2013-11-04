@@ -9,7 +9,9 @@ package edu.wpi.first.wpilibj.templates;
 
 
 import com.sun.squawk.util.MathUtils;
+import edu.wpi.first.wpilibj.Gyro;
 import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.Victor;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -22,33 +24,31 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  * directory.
  */
 public class RobotTemplate extends SimpleRobot {
-    Victor FL = new Victor(1);
-    Victor FR = new Victor(2);
-    Victor BL = new Victor(3);
-    Victor BR = new Victor(4);
+    RobotDrive drive = new RobotDrive(1,2,3,4);
     Joystick stickOfJoy = new Joystick(1);
+    Gyro gyro = new Gyro(5);
     double x;
     double y;
-    
     double magnitude;
     double angle;
+    double rotation;
+    double gyroRawAngle;
+    double gyroAngle;
     
-    double FLSpeed;
-    double FRSpeed;
-    double BLSpeed;
-    double BRSpeed;
+    
     /**
      * This function is called once each time the robot turns on.
      */
     public void robotInit() {
-        operatorControl();
     }
+    
     /**
      * This function is called once each time the robot is disabled.
      */
     public void disabled() {
         
     }
+    
     /**
      * This function is called once each time the robot enters autonomous mode.
      */
@@ -61,8 +61,10 @@ public class RobotTemplate extends SimpleRobot {
      */
     public void operatorControl() {
         while(true) {
-            dashboard();
+            sense();
+            process();
             drive();
+            dashboard();
         }
     }
     
@@ -73,36 +75,43 @@ public class RobotTemplate extends SimpleRobot {
         
     }
     /**
+    
+    */
+    public void sense() {
+        x = stickOfJoy.getRawAxis(1);
+        y = stickOfJoy.getRawAxis(2);
+        rotation = stickOfJoy.getRawAxis(3);
+        gyroRawAngle = gyro.getAngle();
+    }
+    
+    /**
+    
+    */
+    public void process() {  
+        gyroAngle = gyroRawAngle % 360;
+        angle = MathUtils.atan2(y, x);
+        magnitude = Math.max(x, y);
+    }
+    
+    /**
      * This function sets the speed of each jaguar
      */
         public void drive() {
-            magnitude = Math.max(x, y);
-            angle = MathUtils.atan2(y, x) / Math.PI;
-            /*
-            angle = .5 --> forward -->  +;+;+;+
-            angle = 0 ----> right --->  +;-;+;-
-            angle = 1, -1 --> left -->  -;+;-;+
-            angle = -.5 ---> back --->  -;-;-;-
-            */
-            FLSpeed = magnitude;
-            FRSpeed = magnitude;
-            BLSpeed = magnitude;
-            BRSpeed = magnitude;
-            
+            drive.mecanumDrive_Cartesian(x, y, rotation, gyroRawAngle);
         }
         
-        public void dashboard()
-        {
-            SmartDashboard.putNumber("X", stickOfJoy.getRawAxis(1));
-            SmartDashboard.putNumber("Y", stickOfJoy.getRawAxis(2));
+        /**
+         * 
+         */
+        public void dashboard() {
+            SmartDashboard.putNumber("X", x);
+            SmartDashboard.putNumber("Y", y);
             SmartDashboard.putNumber("Magnitude", magnitude);
             SmartDashboard.putNumber("Angle", angle);
-            SmartDashboard.putNumber("Front Left Wheel Speed", FLSpeed);
-            SmartDashboard.putNumber("Front Right Wheel Speed", FRSpeed);
-            SmartDashboard.putNumber("Back Left Wheel Speed", BLSpeed);
-            SmartDashboard.putNumber("Back Right Wheel Speed", BRSpeed);
+            SmartDashboard.putNumber("Rotation", rotation);
             
             x = SmartDashboard.getNumber("X");
             y = SmartDashboard.getNumber("Y");
+            rotation = SmartDashboard.getNumber("Rotation");
         }
 }
